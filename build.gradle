@@ -1,0 +1,56 @@
+file('build.properties').withReader {
+    def prop = new Properties()
+    prop.load it
+    project.ext.config = new ConfigSlurper().parse prop
+}
+
+apply plugin: 'java'
+apply plugin: 'scala'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+
+version = config.version
+group = config.group
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile([group: 'org.scala-lang', name: 'scala-library', version: config.version_scala],
+            [group: 'com.typesafe.akka', name: 'akka-actor_2.11', version: config.version_akka],
+            [group: 'commons-logging', name: 'commons-logging', version: config.version_commons_logging],
+            [group: 'commons-lang', name: 'commons-lang', version: config.version_commons_lang],
+            [group: 'org.hsqldb', name: 'hsqldb', version: config.version_hsqldb],
+            [group: 'com.healthmarketscience.jackcess', name: 'jackcess', version: config.version_jackcess],
+            files(
+                    "ucanaccess-2.0.9.2.jar"
+            ))
+
+}
+
+jar {
+    manifest {
+        if (!config.mainClass.isEmpty()) attributes "Main-Class": config.mainClass
+    }
+}
+
+task testJar(type: Jar, dependsOn: javadoc) {
+    from sourceSets.main.output
+    from sourceSets.test.output
+    classifier = 'test'
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    from 'build/docs/javadoc'
+    classifier = 'javadoc'
+}
+
+build.dependsOn testJar, sourceJar, javadocJar
